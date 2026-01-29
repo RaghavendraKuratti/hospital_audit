@@ -13,6 +13,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "dotenv": "^17.2.3",
-    "fs": "^0.0.1-security"
+    "fs": "^0.0.1-security",
+    "telegraf": "^4.16.3"
   }
 }
