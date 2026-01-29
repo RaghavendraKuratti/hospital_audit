@@ -89,7 +89,7 @@ bot.on('photo', async (ctx) => {
         // 4. Reply to your phone using sendLongMessage to handle long responses
         const auditReport = result.response.text();
 
-        const disclaimer = "\n\n---\n*⚖️ VigilHealth Advisory: This AI report is for educational purposes. Always verify with a legal expert before filing a formal grievance.*";
+        const disclaimer = "\n\n---\n⚖️ VigilHealth Advisory: This AI report is for educational purposes. Always verify with a legal expert before filing a formal grievance.";
         await sendLongMessage(ctx, `--- SHADOW AUDITOR REPORT ---\n\n${auditReport}${disclaimer}`);
     } catch (error) {
         console.error(error);
