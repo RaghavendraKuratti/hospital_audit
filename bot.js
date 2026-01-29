@@ -22,6 +22,36 @@ console.log("🚀 Portable Shadow Auditor is waking up...");
 
 bot.start((ctx) => ctx.reply('Upload a photo of a hospital bill. I will find the corruption.'));
 
+
+const sendLongMessage = async (ctx, text) => {
+    const limit = 4000;
+    let startIndex = 0;
+
+    while (startIndex < text.length) {
+        let endIndex = startIndex + limit;
+
+        // If we're not at the end of the text, find the last newline or space
+        if (endIndex < text.length) {
+            const lastNewline = text.lastIndexOf('\n', endIndex);
+            const lastSpace = text.lastIndexOf(' ', endIndex);
+            
+            // Prioritize breaking at a newline, then a space
+            if (lastNewline > startIndex) {
+                endIndex = lastNewline;
+            } else if (lastSpace > startIndex) {
+                endIndex = lastSpace;
+            }
+        }
+
+        const chunk = text.substring(startIndex, endIndex).trim();
+        if (chunk) {
+            await ctx.reply(chunk, { parse_mode: 'Markdown' });
+        }
+        
+        startIndex = endIndex;
+    }
+};
+
 bot.on('photo', async (ctx) => {
     ctx.reply('🔍 Analyzing for overcharges and IRDAI violations... hang tight.');
     
@@ -54,8 +84,9 @@ bot.on('photo', async (ctx) => {
         ]);
 
         // 4. Reply to your phone
-        ctx.reply(`--- SHADOW AUDITOR REPORT ---\n\n${result.response.text()}`);
-
+        // ctx.reply(`--- SHADOW AUDITOR REPORT ---\n\n${result.response.text()}`);
+        // INSTEAD of ctx.reply(auditReport), use:
+        await sendLongMessage(ctx, `--- SHADOW AUDITOR REPORT ---\n\n${auditReport}`);
     } catch (error) {
         console.error(error);
         ctx.reply('❌ The system choked on that image. Try a clearer photo.');
