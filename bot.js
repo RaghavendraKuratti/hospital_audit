@@ -83,9 +83,8 @@ bot.on('photo', async (ctx) => {
             { inlineData: { data: base64Image, mimeType: "image/jpeg" } }
         ]);
 
-        // 4. Reply to your phone
-        // ctx.reply(`--- SHADOW AUDITOR REPORT ---\n\n${result.response.text()}`);
-        // INSTEAD of ctx.reply(auditReport), use:
+        // 4. Reply to your phone using sendLongMessage to handle long responses
+        const auditReport = result.response.text();
         await sendLongMessage(ctx, `--- SHADOW AUDITOR REPORT ---\n\n${auditReport}`);
     } catch (error) {
         console.error(error);
