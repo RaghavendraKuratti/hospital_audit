@@ -2,8 +2,8 @@ import { Telegraf } from 'telegraf';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from 'axios';
 import dotenv from "dotenv";
+import http from 'http';
 
-const http = require('http');
 const port = process.env.PORT || 3000;
 http.createServer((req, res) => {
   res.writeHead(200);
