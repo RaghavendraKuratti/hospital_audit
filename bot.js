@@ -65,19 +65,9 @@ bot.on('photo', async (ctx) => {
         const base64Image = Buffer.from(response.data).toString('base64');
 
         // 3. Send to Gemini
-        const prompt = `
-        Act as a Senior Health Audit Consultant specializing in CGHS (Central Government Health Scheme) and IRDAI (Insurance Regulatory and Development Authority of India) compliance.
-        Analyze the provided medical bill image against these SPECIFIC national standards:
-        1. **CGHS Rate Compliance:** Check if Room Rent and Consultation fees exceed the capped rates for a 'NABH Accredited' hospital in a Tier 1 city (Pune/Metro).
-        2. **Non-Payable Items (IRDAI):** Identify charges for 'Consumables' that are legally non-payable (e.g., gloves, masks, syringes, admission kits, pulse oximetry charges) as per the 2016/2021 IRDAI Master Circular.
-        3. **Unbundling Audit:** Identify if the hospital is charging separately for items that should be part of the 'Package Rate' (e.g., OT charges including disposables).
-        4. **Phantom Charges:** Flag vague entries like 'Service Charges' or 'Medical Equipment' that lack itemization.
-
-        FORMAT YOUR REPORT:
-        - **Statutory Violations:** List each charge that violates a specific government guideline.
-        - **Inflation Index:** The percentage markup over standard CGHS rates.
-        - **Total Recovery Amount:** The exact INR the patient should demand back.
-        `;
+        const prompt = process.env.AUDIT_PROMPT || "Audit this bill for overcharges and IRDAI violations.";
+        console.log(`📸 Prompt: ${prompt}`);
+        
         const result = await model.generateContent([
             prompt,
             { inlineData: { data: base64Image, mimeType: "image/jpeg" } }
