@@ -4,15 +4,47 @@ import { db, upsertUser, addProduct } from './src/database.js';
 import { auditReceipt } from './src/analyser.js';
 import { runTrackerLoop } from './src/tracker.js';
 import { generateClaimDraft } from './src/claim-gen.js';
-import http from 'http';
+import express from 'express';
 
+const app = express();
 const port = process.env.PORT || 3000;
-http.createServer((req, res) => {
-    res.writeHead(200);
-    res.end('Tracker is Active');
-}).listen(port);
 
-const bot = new TelegramBot(process.env.TELEGRAM_API_KEY, { polling: true });
+// Determine if we're in production (Render.com) or development
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
+
+let bot;
+
+if (isProduction) {
+    // Use webhook mode for production
+    bot = new TelegramBot(process.env.TELEGRAM_API_KEY);
+    const webhookUrl = process.env.WEBHOOK_URL || `https://${process.env.RENDER_EXTERNAL_HOSTNAME}`;
+    
+    // Set webhook
+    bot.setWebHook(`${webhookUrl}/bot${process.env.TELEGRAM_API_KEY}`).then(() => {
+        console.log('Webhook set successfully');
+    }).catch(err => {
+        console.error('Error setting webhook:', err);
+    });
+    
+    // Webhook endpoint
+    app.use(express.json());
+    app.post(`/bot${process.env.TELEGRAM_API_KEY}`, (req, res) => {
+        bot.processUpdate(req.body);
+        res.sendStatus(200);
+    });
+} else {
+    // Use polling mode for development
+    bot = new TelegramBot(process.env.TELEGRAM_API_KEY, { polling: true });
+}
+
+// Health check endpoint
+app.get('/', (req, res) => {
+    res.send('Vigil-X Tracker is Active');
+});
+
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
 
 // A. Onboarding
 bot.onText(/\/start/, async (msg) => {
