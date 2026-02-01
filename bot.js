@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import TelegramBot from 'node-telegram-bot-api';
-import { db, upsertUser, addProduct } from './src/database.js';
+import { upsertUser, addProduct, getAllUsers } from './src/database.js';
 import { auditReceipt } from './src/analyser.js';
 import { runTrackerLoop } from './src/tracker.js';
 import { generateClaimDraft } from './src/claim-gen.js';
@@ -105,7 +105,8 @@ bot.on('callback_query', async (query) => {
     
     if (data.startsWith('claim_')) {
         const itemId = parseInt(data.split('_')[1]);
-        const user = db.data.users.find(u => u.chatId === chatId);
+        const users = await getAllUsers();
+        const user = users.find(u => u.chatId === chatId);
         const item = user?.tracking.find(i => i.id === itemId);
         
         if (item) {

@@ -1,11 +1,13 @@
-import { db } from './database.js';
+import { getAllUsers, updateUserTracking } from './database.js';
 import { scrapeLivePrice } from './scraper.js';
 
 export const runTrackerLoop = async (bot) => {
-    const users = db.data.users; // Get all users from DB
+    const users = await getAllUsers(); // Get all users from DB
     console.log("Users", users);
     
     for (const user of users) {
+        let trackingUpdated = false;
+        
         for (const item of user.tracking) {
             // Skip if no URL is available
             if (!item.url) {
@@ -26,9 +28,9 @@ export const runTrackerLoop = async (bot) => {
             if (livePrice < pricePaid) {
                 const refund = pricePaid - livePrice;
                 
-                // Update current price in database
+                // Update current price in tracking item
                 item.currentPrice = livePrice;
-                await db.write();
+                trackingUpdated = true;
                 
                 // INTIMATION: Message with Action Button
                 const opts = {
@@ -41,6 +43,11 @@ export const runTrackerLoop = async (bot) => {
 
                 bot.sendMessage(user.chatId, `🚨 JACKPOT!\n${item.name} dropped to ₹${livePrice}!`, opts);
             }
+        }
+        
+        // Update user tracking if any prices changed
+        if (trackingUpdated) {
+            await updateUserTracking(user.chatId, user.tracking);
         }
     }
 };
