@@ -29,21 +29,40 @@ bot.on('photo', async (msg) => {
         // Download the photo
         const fileId = msg.photo[msg.photo.length - 1].file_id;
         const file = await bot.getFile(fileId);
+        
+        if (!file || !file.file_path) {
+            throw new Error('Failed to retrieve image file from Telegram');
+        }
+        
         const fileUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_API_KEY}/${file.file_path}`;
         
         // Fetch image as buffer
         const axios = (await import('axios')).default;
-        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+        const response = await axios.get(fileUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000 // 30 second timeout
+        });
+        
+        if (!response.data || response.data.byteLength === 0) {
+            throw new Error('Downloaded image is empty');
+        }
+        
         const imageBuffer = Buffer.from(response.data);
         
         // Pass to Gemini for analysis
         const productData = await auditReceipt(imageBuffer);
+        
+        if (!productData || !productData.name) {
+            throw new Error('Could not extract product information from receipt');
+        }
+        
         await addProduct(chatId, productData);
         
-        bot.sendMessage(chatId, `✅ Watchlist: ${productData.name}\nPrice: ₹${productData.price}\nMonitoring starts now.`);
+        bot.sendMessage(chatId, `✅ Watchlist: ${productData.name}\nVariant: ${productData.variant || 'N/A'}\nPrice: ₹${productData.price}\nPlatform: ${productData.platform || 'Unknown'}\n\nMonitoring starts now.`);
     } catch (error) {
         console.error('Error processing photo:', error);
-        bot.sendMessage(chatId, "❌ Failed to process receipt. Please try again.");
+        const errorMessage = error.message || 'Unknown error occurred';
+        bot.sendMessage(chatId, `❌ Failed to process receipt.\n\nError: ${errorMessage}\n\nPlease ensure:\n• The image is clear and readable\n• The receipt shows product name and price\n• Try taking a better photo and send again`);
     }
 });
 
