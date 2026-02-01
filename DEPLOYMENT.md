@@ -44,10 +44,10 @@ Set these environment variables in your Render.com dashboard:
 
 ## How It Works
 
-- **Development Mode**: Uses polling (when running locally)
-- **Production Mode**: Uses webhooks (when deployed on Render.com)
-
-The bot automatically detects the environment and switches between polling and webhook modes.
+This bot is configured specifically for Render.com production deployment:
+- Uses **webhook mode** (no polling conflicts)
+- Uses **MongoDB Atlas** for persistent storage
+- Automatically sets up webhook on startup
 
 ## Webhook Setup
 
@@ -58,18 +58,13 @@ https://your-app.onrender.com/bot<YOUR_TELEGRAM_API_KEY>
 
 ## Database Storage
 
-The app automatically detects the environment:
-
-- **Production (with MongoDB credentials)**: Uses MongoDB Atlas for persistent storage
-- **Development (no MongoDB credentials)**: Uses local `db.json` file
-
-### Why MongoDB?
-
-Render.com uses ephemeral storage - any files created (like `db.json`) are lost on restart. MongoDB Atlas provides:
-- ✅ Free tier (512MB storage)
-- ✅ Persistent data storage
-- ✅ Automatic backups
-- ✅ Global availability
+This app uses **MongoDB Atlas** exclusively for data storage because:
+- Render.com has ephemeral storage (files are lost on restart)
+- MongoDB Atlas provides:
+  - ✅ Free tier (512MB storage)
+  - ✅ Persistent data storage
+  - ✅ Automatic backups
+  - ✅ Global availability
 
 ## Troubleshooting
 
@@ -91,12 +86,9 @@ If you see "terminated by other getUpdates request", it means:
 4. Check Render logs for "Connected to MongoDB Atlas" message
 5. If connection fails, app will fall back to local storage (data will be lost on restart)
 
-## Testing Locally
+## Important Notes
 
-To test locally with polling mode:
-```bash
-npm install
-npm start
-```
-
-Make sure `NODE_ENV` is NOT set to `production` when testing locally.
+- This bot is configured for **production deployment only**
+- MongoDB credentials are **required** - the app will not start without them
+- The webhook URL is automatically detected from Render's environment
+- All data is stored in MongoDB Atlas (no local files)
