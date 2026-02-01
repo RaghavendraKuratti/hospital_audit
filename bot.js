@@ -5,6 +5,12 @@ import { auditReceipt } from './src/analyser.js';
 import { runTrackerLoop } from './src/tracker.js';
 import { generateClaimDraft } from './src/claim-gen.js';
 
+const port = process.env.PORT || 3000;
+http.createServer((req, res) => {
+    res.writeHead(200);
+    res.end('Tracker is Active');
+}).listen(port);
+
 const bot = new TelegramBot(process.env.TELEGRAM_API_KEY, { polling: true });
 
 // A. Onboarding
