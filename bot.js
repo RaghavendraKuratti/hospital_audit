@@ -4,6 +4,7 @@ import { db, upsertUser, addProduct } from './src/database.js';
 import { auditReceipt } from './src/analyser.js';
 import { runTrackerLoop } from './src/tracker.js';
 import { generateClaimDraft } from './src/claim-gen.js';
+import http from 'http';
 
 const port = process.env.PORT || 3000;
 http.createServer((req, res) => {
