@@ -73,6 +73,11 @@ export const searchAndGetPrice = async (productName, variant, platform) => {
                 }
             });
             
+            console.log(`📦 Found ${products.length} Amazon products`);
+            if (products.length > 0) {
+                console.log(`📝 Sample: "${products[0].title.substring(0, 50)}..." - ₹${products[0].price}`);
+            }
+            
             // Find best match based on product name similarity
             const bestMatch = findBestMatch(productName, variant, products);
             if (bestMatch) {
@@ -81,19 +86,35 @@ export const searchAndGetPrice = async (productName, variant, platform) => {
             }
             
         } else if (platform?.toLowerCase().includes('flipkart')) {
-            // Flipkart: Find best matching product
+            // Flipkart: Find best matching product with multiple selector strategies
             const products = [];
             
-            // Get all product cards
-            $('._1AtVbE').each((i, elem) => {
-                const title = $(elem).find('._4rR01T').text().trim() || $(elem).find('.IRpwTa').text().trim();
-                const priceText = $(elem).find('._30jeq3').text().replace(/[₹,]/g, '');
-                const priceValue = parseInt(priceText);
+            // Strategy 1: Try common Flipkart selectors
+            const selectors = [
+                { container: '._1AtVbE', title: '._4rR01T', price: '._30jeq3' },
+                { container: '._2kHMtA', title: '._4rR01T', price: '._30jeq3' },
+                { container: '[data-id]', title: '.s1Q9rs', price: '._30jeq3' },
+                { container: '._13oc-S', title: '._2WkVRV', price: '._30jeq3' }
+            ];
+            
+            for (const sel of selectors) {
+                $(sel.container).each((i, elem) => {
+                    const title = $(elem).find(sel.title).text().trim();
+                    const priceText = $(elem).find(sel.price).text().replace(/[₹,]/g, '');
+                    const priceValue = parseInt(priceText);
+                    
+                    if (title && priceValue && !products.some(p => p.title === title)) {
+                        products.push({ title, price: priceValue });
+                    }
+                });
                 
-                if (title && priceValue) {
-                    products.push({ title, price: priceValue });
-                }
-            });
+                if (products.length > 0) break; // Found products, stop trying selectors
+            }
+            
+            console.log(`📦 Found ${products.length} Flipkart products`);
+            if (products.length > 0) {
+                console.log(`📝 Sample: "${products[0].title.substring(0, 50)}..." - ₹${products[0].price}`);
+            }
             
             // Find best match
             const bestMatch = findBestMatch(productName, variant, products);
