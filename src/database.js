@@ -24,34 +24,56 @@ console.log('✅ Connected to MongoDB Atlas');
 const getUsersCollection = () => mongoDb.collection('users');
 
 export const upsertUser = async (chatId, name) => {
-    const collection = getUsersCollection();
-    const existingUser = await collection.findOne({ chatId });
-    
-    if (!existingUser) {
-        await collection.insertOne({
-            chatId,
-            name,
-            tracking: [],
-            totalRefundsClaimed: 0,
-            createdAt: new Date()
-        });
+    try {
+        const collection = getUsersCollection();
+        const existingUser = await collection.findOne({ chatId });
+        
+        if (!existingUser) {
+            const result = await collection.insertOne({
+                chatId,
+                name,
+                tracking: [],
+                totalRefundsClaimed: 0,
+                createdAt: new Date()
+            });
+            console.log(`✅ User created: ${name} (chatId: ${chatId})`);
+            return result;
+        } else {
+            console.log(`ℹ️ User already exists: ${name} (chatId: ${chatId})`);
+        }
+    } catch (error) {
+        console.error('❌ Error in upsertUser:', error);
+        throw error;
     }
 };
 
 export const addProduct = async (chatId, product) => {
-    const collection = getUsersCollection();
-    await collection.updateOne(
-        { chatId },
-        {
-            $push: {
-                tracking: {
-                    id: Date.now(),
-                    ...product,
-                    addedAt: new Date()
+    try {
+        const collection = getUsersCollection();
+        const result = await collection.updateOne(
+            { chatId },
+            {
+                $push: {
+                    tracking: {
+                        id: Date.now(),
+                        ...product,
+                        addedAt: new Date()
+                    }
                 }
             }
+        );
+        
+        if (result.matchedCount === 0) {
+            console.error(`❌ No user found with chatId: ${chatId}`);
+            throw new Error('User not found. Please use /start command first.');
         }
-    );
+        
+        console.log(`✅ Product added for chatId ${chatId}:`, product.name);
+        return result;
+    } catch (error) {
+        console.error('❌ Error in addProduct:', error);
+        throw error;
+    }
 };
 
 export const getAllUsers = async () => {
