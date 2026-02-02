@@ -9,8 +9,27 @@ import express from 'express';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Telegram bot in polling mode
-const bot = new TelegramBot(process.env.TELEGRAM_API_KEY, { polling: true });
+// Initialize bot without polling first
+const bot = new TelegramBot(process.env.TELEGRAM_API_KEY);
+
+// Clear webhook and start polling
+async function initializeBot() {
+    try {
+        console.log('🔄 Clearing any existing webhook...');
+        await bot.deleteWebHook();
+        console.log('✅ Webhook cleared');
+        
+        // Now start polling
+        await bot.startPolling();
+        console.log('✅ Telegram bot polling started');
+    } catch (error) {
+        console.error('❌ Error initializing bot:', error);
+        process.exit(1);
+    }
+}
+
+// Initialize bot
+initializeBot();
 
 // Simple HTTP server for Render.com port requirement
 app.get('/', (req, res) => {
