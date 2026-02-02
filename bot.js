@@ -34,8 +34,14 @@ if (isProduction) {
     // Webhook endpoint
     app.use(express.json());
     app.post(webhookPath, (req, res) => {
-        bot.processUpdate(req.body);
-        res.sendStatus(200);
+        try {
+            console.log('📨 Received webhook update:', JSON.stringify(req.body).substring(0, 200));
+            bot.processUpdate(req.body);
+            res.sendStatus(200);
+        } catch (error) {
+            console.error('❌ Error processing webhook update:', error);
+            res.sendStatus(500);
+        }
     });
 } else {
     // Local development: Use polling mode
@@ -84,10 +90,16 @@ bot.onText(/\/start/, async (msg) => {
 
 // B. Data Intake (The "Add" Action)
 bot.on('photo', async (msg) => {
+    console.log('📸 Photo received from chatId:', msg.chat.id);
     const chatId = msg.chat.id;
-    bot.sendMessage(chatId, "🔍 Auditing receipt...");
+    const userName = msg.from.first_name || 'User';
     
     try {
+        // Ensure user exists (auto-onboard if they haven't used /start)
+        await upsertUser(chatId, userName);
+        
+        await bot.sendMessage(chatId, "🔍 Auditing receipt...");
+        
         // Download the photo
         const fileId = msg.photo[msg.photo.length - 1].file_id;
         const file = await bot.getFile(fileId);
