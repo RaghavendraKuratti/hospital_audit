@@ -16,14 +16,28 @@ const bot = new TelegramBot(process.env.TELEGRAM_API_KEY);
 async function initializeBot() {
     try {
         console.log('🔄 Clearing any existing webhook...');
-        await bot.deleteWebHook();
+        await bot.deleteWebHook({ drop_pending_updates: true });
         console.log('✅ Webhook cleared');
         
-        // Now start polling
-        await bot.startPolling();
+        // Wait a bit for Telegram to process the webhook deletion
+        console.log('⏳ Waiting for Telegram to process...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Now start polling with error handling
+        await bot.startPolling({
+            restart: true,
+            polling: {
+                interval: 1000,
+                autoStart: true,
+                params: {
+                    timeout: 10
+                }
+            }
+        });
         console.log('✅ Telegram bot polling started');
     } catch (error) {
         console.error('❌ Error initializing bot:', error);
+        console.error('⚠️ Make sure no other bot instances are running!');
         process.exit(1);
     }
 }
