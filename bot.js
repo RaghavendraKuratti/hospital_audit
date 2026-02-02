@@ -4,16 +4,27 @@ import { upsertUser, addProduct, getAllUsers } from './src/database.js';
 import { auditReceipt } from './src/analyser.js';
 import { runTrackerLoop } from './src/tracker.js';
 import { generateClaimDraft } from './src/claim-gen.js';
-import http from 'http';
+import express from 'express';
 
+const app = express();
 const port = process.env.PORT || 3000;
-http.createServer((req, res) => {
-    res.writeHead(200);
-    res.end('Auditor is Active');
-}).listen(port);
 
-// --- CONFIG ---
-const bot = new Telegraf(process.env.TELEGRAM_API_KEY);
+// Telegram bot in polling mode
+const bot = new TelegramBot(process.env.TELEGRAM_API_KEY, { polling: true });
+
+// Simple HTTP server for Render.com port requirement
+app.get('/', (req, res) => {
+    res.send('Vigil-X Tracker is Active');
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', bot: 'running', timestamp: new Date().toISOString() });
+});
+
+app.listen(port, () => {
+    console.log(`✅ HTTP server running on port ${port}`);
+    console.log('✅ Telegram bot running in polling mode');
+});
 
 // A. Onboarding
 bot.onText(/\/start/, async (msg) => {
