@@ -9,41 +9,58 @@ import express from 'express';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Initialize bot without polling first
-const bot = new TelegramBot(process.env.TELEGRAM_API_KEY);
+// Determine if we're in production (Render.com) or local development
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
 
-// Clear webhook and start polling
-async function initializeBot() {
-    try {
-        console.log('🔄 Clearing any existing webhook...');
-        await bot.deleteWebHook({ drop_pending_updates: true });
-        console.log('✅ Webhook cleared');
-        
-        // Wait a bit for Telegram to process the webhook deletion
-        console.log('⏳ Waiting for Telegram to process...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Now start polling with error handling
-        await bot.startPolling({
-            restart: true,
-            polling: {
-                interval: 1000,
-                autoStart: true,
-                params: {
-                    timeout: 10
-                }
-            }
-        });
-        console.log('✅ Telegram bot polling started');
-    } catch (error) {
-        console.error('❌ Error initializing bot:', error);
-        console.error('⚠️ Make sure no other bot instances are running!');
-        process.exit(1);
+let bot;
+
+if (isProduction) {
+    // Production: Use webhook mode
+    console.log('🌐 Running in PRODUCTION mode (webhook)');
+    bot = new TelegramBot(process.env.TELEGRAM_API_KEY);
+    
+    const webhookUrl = process.env.WEBHOOK_URL || `https://${process.env.RENDER_EXTERNAL_HOSTNAME}`;
+    const webhookPath = `/bot${process.env.TELEGRAM_API_KEY}`;
+    
+    // Set webhook
+    bot.setWebHook(`${webhookUrl}${webhookPath}`, {
+        drop_pending_updates: true
+    }).then(() => {
+        console.log(`✅ Webhook set to: ${webhookUrl}${webhookPath}`);
+    }).catch(err => {
+        console.error('❌ Error setting webhook:', err);
+    });
+    
+    // Webhook endpoint
+    app.use(express.json());
+    app.post(webhookPath, (req, res) => {
+        bot.processUpdate(req.body);
+        res.sendStatus(200);
+    });
+} else {
+    // Local development: Use polling mode
+    console.log('💻 Running in DEVELOPMENT mode (polling)');
+    bot = new TelegramBot(process.env.TELEGRAM_API_KEY);
+    
+    // Clear webhook and start polling
+    async function initializeBot() {
+        try {
+            console.log('🔄 Clearing any existing webhook...');
+            await bot.deleteWebHook({ drop_pending_updates: true });
+            console.log('✅ Webhook cleared');
+            
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            await bot.startPolling({ restart: true });
+            console.log('✅ Telegram bot polling started');
+        } catch (error) {
+            console.error('❌ Error initializing bot:', error);
+            process.exit(1);
+        }
     }
+    
+    initializeBot();
 }
-
-// Initialize bot
-initializeBot();
 
 // Simple HTTP server for Render.com port requirement
 app.get('/', (req, res) => {
