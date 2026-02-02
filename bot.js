@@ -143,7 +143,7 @@ bot.on('callback_query', async (query) => {
 // D. The Action (Background Loop) - Run tracker every 12 hours
 setInterval(async () => {
     await runTrackerLoop(bot);
-}, 10 * 60 * 1000); // 12-hour hunt cycle
+}, 5 * 60 * 1000); // 12-hour hunt cycle
 
 // Start the bot
 console.log('Vigil-X Bot is running...');
