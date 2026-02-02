@@ -103,7 +103,7 @@ bot.on('photo', async (msg) => {
         
         await addProduct(chatId, productData);
         
-        bot.sendMessage(chatId, `✅ Watchlist: ${productData.name}\nVariant: ${productData.variant || 'N/A'}\nPrice: ₹${productData.price}\nPlatform: ${productData.platform || 'Unknown'}\n\nMonitoring starts now.`);
+        bot.sendMessage(chatId, `✅ Watchlist: ${productData.name}\nVariant: ${productData.variant || 'N/A'}\nPrice: ₹${productData.price}\nPlatform: ${productData.platform || 'Unknown'}\n\n🔍 Monitoring starts now. I'll search for price drops automatically.`);
     } catch (error) {
         console.error('Error processing photo:', error);
         const errorMessage = error.message || 'Unknown error occurred';

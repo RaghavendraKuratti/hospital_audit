@@ -9,7 +9,23 @@ export const auditReceipt = async (imageBuffer) => {
         }
 
         const model = genAI.getGenerativeModel({ model: process.env.GEMINI_API_MODEL });
-        const prompt = "Extract the Product Name, Variant (Color/Storage), and Total Price Paid from this Indian e-commerce receipt. Return ONLY valid JSON in this exact format: { \"name\": \"product name\", \"variant\": \"variant\", \"price\": \"price as number\", \"platform\": \"platform name\" }. Do not include any markdown formatting or code blocks.";
+        const prompt = `Extract the following information from this Indian e-commerce receipt/screenshot:
+1. Product Name
+2. Variant (Color/Storage/Size)
+3. Total Price Paid
+4. Platform (Amazon/Flipkart)
+5. Product URL (if visible in the screenshot - look for URLs in address bar, share links, or product page URLs)
+
+Return ONLY valid JSON in this exact format:
+{
+  "name": "product name",
+  "variant": "variant",
+  "price": number,
+  "platform": "platform name",
+  "url": "product URL if found, otherwise null"
+}
+
+IMPORTANT: Look carefully for any visible URLs in the screenshot. Do not include any markdown formatting or code blocks.`;
 
         const result = await model.generateContent([
             prompt,

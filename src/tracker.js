@@ -1,36 +1,42 @@
 import { getAllUsers, updateUserTracking } from './database.js';
-import { scrapeLivePrice } from './scraper.js';
+import { scrapeLivePrice, searchAndGetPrice } from './scraper.js';
 
 export const runTrackerLoop = async (bot) => {
     const users = await getAllUsers(); // Get all users from DB
-    console.log("Users", users);
+    console.log(`🔍 Checking prices for ${users.length} users...`);
     
     for (const user of users) {
         let trackingUpdated = false;
         
         for (const item of user.tracking) {
-            // Skip if no URL is available
-            if (!item.url) {
-                console.log(`Skipping ${item.name} - no URL provided`);
-                continue;
+            let livePrice = null;
+            
+            // Try to get price from URL if available
+            if (item.url) {
+                console.log(`📍 Scraping from URL: ${item.name}`);
+                livePrice = await scrapeLivePrice(item.url);
             }
             
-            const livePrice = await scrapeLivePrice(item.url);
+            // If no URL or URL scraping failed, search by product name
+            if (!livePrice && item.name) {
+                console.log(`🔎 Searching for: ${item.name}`);
+                livePrice = await searchAndGetPrice(item.name, item.variant, item.platform);
+            }
             
-            // Skip if scraping failed
+            // Skip if both methods failed
             if (!livePrice) {
-                console.log(`Failed to scrape price for ${item.name}`);
+                console.log(`❌ Failed to get price for ${item.name}`);
                 continue;
             }
             
             const pricePaid = item.price || item.pricePaid || 0;
             
+            // Update current price in tracking item
+            item.currentPrice = livePrice;
+            trackingUpdated = true;
+            
             if (livePrice < pricePaid) {
                 const refund = pricePaid - livePrice;
-                
-                // Update current price in tracking item
-                item.currentPrice = livePrice;
-                trackingUpdated = true;
                 
                 // INTIMATION: Message with Action Button
                 const opts = {
@@ -41,7 +47,9 @@ export const runTrackerLoop = async (bot) => {
                     }
                 };
 
-                bot.sendMessage(user.chatId, `🚨 JACKPOT!\n${item.name} dropped to ₹${livePrice}!`, opts);
+                bot.sendMessage(user.chatId, `🚨 JACKPOT!\n${item.name} dropped to ₹${livePrice}!\n\nYou paid: ₹${pricePaid}\nCurrent price: ₹${livePrice}\nPotential refund: ₹${refund}`, opts);
+            } else {
+                console.log(`✅ ${item.name}: ₹${pricePaid} → ₹${livePrice} (no drop)`);
             }
         }
         
@@ -50,4 +58,6 @@ export const runTrackerLoop = async (bot) => {
             await updateUserTracking(user.chatId, user.tracking);
         }
     }
+    
+    console.log('✅ Price check completed');
 };
